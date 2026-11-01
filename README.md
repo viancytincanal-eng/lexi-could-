@@ -2,39 +2,52 @@
 
 Asistente conversacional independiente, alojada en la nube y accesible desde móvil.
 
-## Objetivo
-
-Construir una aplicación propia con interfaz web adaptable, backend propio, memoria persistente y un modelo de lenguaje intercambiable.
-
 ## Estado actual: prototipo 0.1
 
 - Interfaz web móvil.
 - API FastAPI.
-- Memoria persistente de conversaciones con SQLite.
+- Memoria persistente: SQLite local o PostgreSQL externo.
 - Adaptador para modelos con API compatible con OpenAI Chat Completions.
 - Configuración mediante variables de entorno.
-- Dockerfile y Docker Compose para despliegue.
+- Dockerfile y blueprint de despliegue para Render.
 - Sin claves reales ni secretos guardados en el repositorio.
 
-## Inicio rápido
+## Despliegue sin tarjeta (propuesta inicial)
 
-1. Copia `.env.example` como `.env` en el servidor.
-2. Configura un token largo en `APP_TOKEN`.
-3. Configura `LLM_BASE_URL`, `LLM_MODEL` y `LLM_API_KEY` según el proveedor elegido.
-4. Ejecuta `docker compose up --build -d`.
-5. Abre el servidor por HTTPS y pega el token en Ajustes.
+1. Crear una base PostgreSQL gratuita en Neon.
+2. Crear una cuenta gratuita en Render y conectar este repositorio.
+3. Render detecta `render.yaml` y prepara el servicio Docker.
+4. En Render, introducir la URL privada de Neon en `DATABASE_URL`.
+5. Configurar el proveedor/modelo en `LLM_BASE_URL`, `LLM_MODEL` y `LLM_API_KEY`.
+6. Desplegar y abrir la URL HTTPS de Render.
 
-No publiques el servicio sin HTTPS y sin cambiar el token de ejemplo.
+El servicio gratuito de Render se duerme tras inactividad y su disco local es efímero. Por eso la memoria se guarda en Neon, no en el contenedor. La base gratuita de Neon tiene límites de almacenamiento y cómputo; revisar `DEPLOYMENT.md`.
+
+## Inicio local
+
+Configura `.env` con un `APP_TOKEN` largo y, si quieres conversar, los datos del modelo. Ejecuta:
+
+```bash
+docker compose up --build
+```
+
+## Seguridad
+
+- El navegador nunca recibe la clave del proveedor del modelo.
+- La API requiere `APP_TOKEN`; el endpoint de salud es público para los chequeos del hosting.
+- Nunca subas `.env` ni claves reales a GitHub.
+- Antes de uso público, añade cuentas individuales, copias de seguridad y controles de abuso.
 
 ## Estructura
 
 - `frontend/`: interfaz móvil.
 - `backend/app/`: API, memoria y adaptador del modelo.
-- `ARCHITECTURE.md`: decisiones, límites y siguientes pasos.
+- `render.yaml`: configuración inicial de despliegue.
+- `ARCHITECTURE.md`: decisiones técnicas.
+- `DEPLOYMENT.md`: pasos y límites del alojamiento.
 
 ## Principios
 
 - Evitar depender de un único proveedor.
 - Mantener el código y los datos bajo nuestro control.
 - Separar personalidad, memoria y conocimiento documental.
-- Mantener las claves API y secretos fuera del repositorio.
