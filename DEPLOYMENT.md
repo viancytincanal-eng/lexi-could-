@@ -1,38 +1,42 @@
-# Despliegue recomendado
+# Despliegue cloud sin tarjeta: Render + Neon
 
-## Objetivo
-Mantener la aplicación y la memoria en una máquina virtual propia, y usar un proveedor intercambiable sólo para la inferencia del modelo. No ejecutar el modelo grande en el teléfono.
+## Diseño
 
-## Opción recomendada para empezar: Oracle Cloud Always Free
-Oracle publica recursos Always Free que no caducan, incluyendo hasta 2 OCPU y 12 GB de RAM en Ampere A1, más almacenamiento de volúmenes dentro de los límites gratuitos. La instancia debe crearse en la región principal de la cuenta. Puede haber falta temporal de capacidad y Oracle puede reclamar instancias que considere inactivas.
+- **Render Free:** ejecuta el contenedor Docker de FastAPI y sirve la interfaz por HTTPS.
+- **Neon Free:** PostgreSQL externo para que conversaciones y mensajes sobrevivan a reinicios y suspensiones de Render.
+- **Proveedor LLM:** cualquier endpoint compatible con OpenAI Chat Completions; se configura después, sin exponer la clave al navegador.
 
-Antes de elegirla:
-- La mayoría de los registros requieren teléfono y tarjeta para verificación.
-- La tarjeta no debería recibir cargos salvo que se convierta la cuenta a modalidad de pago o se excedan los límites gratuitos.
-- No se debe pulsar Upgrade ni crear recursos que no estén marcados Always Free Eligible.
-- La región principal no se puede cambiar después.
+## Límites que debemos aceptar
 
-## Modelo inicial de prueba: OpenRouter
-El backend usa una API compatible con OpenAI Chat Completions. Para probar una ruta gratuita de modelos abiertos, los valores iniciales pueden ser:
+### Render Free
+- 512 MB RAM y CPU compartida limitada.
+- El servicio se duerme tras 15 minutos sin tráfico y tarda aproximadamente un minuto en arrancar de nuevo.
+- El sistema de archivos local es efímero y no debe guardar la memoria.
+- Los servicios gratuitos pueden reiniciarse y tienen límites de uso/compilación.
 
-- `LLM_BASE_URL=https://openrouter.ai/api/v1`
-- `LLM_MODEL=openrouter/free`
-- `LLM_API_KEY=` tu clave privada de OpenRouter
+### Neon Free
+- Plan gratuito permanente, sin tarjeta de crédito.
+- 1 GB de almacenamiento por proyecto.
+- 100 CU-hours mensuales por proyecto y 5 GB de transferencia pública según los límites actuales.
+- El cómputo se suspende tras inactividad; la primera consulta lo despierta.
+- Si se alcanza el límite de cómputo o transferencia, la base puede suspenderse hasta el siguiente período. Los datos permanecen almacenados.
 
-La ruta gratuita está limitada y puede elegir entre modelos gratuitos disponibles; no es una garantía de modelo fijo ni de servicio ilimitado. OpenRouter publica un límite base de 20 solicitudes por minuto y 50 por día para variantes gratuitas. Las condiciones pueden cambiar.
+## Pasos
 
-## Variables de entorno
-Configura `APP_TOKEN` con un secreto largo y aleatorio. No reutilices contraseñas personales. Mantén `.env` fuera de GitHub. Nunca escribas claves del proveedor en el frontend.
+1. Crear cuenta en Neon: https://console.neon.tech/signup
+2. Crear un proyecto PostgreSQL y copiar la cadena de conexión (botón Connect).
+3. Crear cuenta en Render: https://render.com/
+4. En Render, seleccionar New > Blueprint y conectar el repositorio público `viancytincanal-eng/lexi-could-`.
+5. Render leerá `render.yaml`. En el formulario del Blueprint, completar los valores secretos que aparecen como `sync: false`.
+6. Para `DATABASE_URL`, pegar la cadena de Neon completa. Mantenerla privada.
+7. Para `LLM_BASE_URL`, `LLM_MODEL` y `LLM_API_KEY`, se puede dejar vacío inicialmente; el servicio arrancará, pero el chat no responderá hasta configurar un modelo.
+8. Desplegar. Render generará `APP_TOKEN` automáticamente. Copiarlo desde Environment y guardarlo en un lugar privado.
+9. Abrir la URL HTTPS de la aplicación, entrar en Ajustes y pegar el token.
 
-## Seguridad antes de abrir al público
-- HTTPS obligatorio.
-- Token privado fuerte.
-- Firewall: exponer sólo los puertos necesarios.
-- Copias de seguridad de `/data` (contiene SQLite).
-- No compartir el token en capturas, mensajes públicos ni el repositorio.
+## Importante
 
-## Alternativas descartadas para memoria persistente
-Render Free puede servir para una demostración, pero apaga el servicio tras 15 minutos sin tráfico y elimina los archivos locales al dormir, reiniciar o desplegar. Su base Postgres gratuita tiene límite de 30 días. No es una buena ubicación para conservar la memoria de Lexi a largo plazo.
-
-## Estado
-Este documento es un plan, no una confirmación de despliegue. No se ha creado una cuenta cloud, VM, clave API ni servicio público.
+- No enviar contraseñas, claves API, tokens ni cadenas de conexión por el chat.
+- No guardar credenciales en GitHub.
+- No convertir el plan de Render o Neon a uno de pago sin revisar primero los costos.
+- Este documento describe el procedimiento; el servicio todavía no está desplegado.
+- Antes de invitar a otras personas, implementar cuentas individuales, rate limiting, borrado/exportación de datos y copias de seguridad.
