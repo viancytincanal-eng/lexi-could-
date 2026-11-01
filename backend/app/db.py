@@ -2,6 +2,10 @@ from sqlalchemy import create_engine, text
 from .config import settings
 
 DATABASE_URL = settings.database_url or f"sqlite:///{settings.database_path}"
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 IS_SQLITE = DATABASE_URL.startswith("sqlite")
 connect_args = {"check_same_thread": False} if IS_SQLITE else {}
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args=connect_args)
