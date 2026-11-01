@@ -43,19 +43,21 @@ const input = document.querySelector("#message");
 const send = document.querySelector("#send");
 const statusEl = document.querySelector("#status");
 const dialog = document.querySelector("#settings-dialog");
-let conversationId = null;
+let conversationId = localStorage.getItem("lexi_cloud_conversation_id") || null;
 const tokenKey = "lexi_cloud_access_token";
 function authHeaders(){const token=localStorage.getItem(tokenKey)||"";return token?{"Authorization":"Bearer "+token}:{}}
 function addBubble(text, role){const empty=messages.querySelector(".welcome");if(empty)empty.remove();const el=document.createElement("div");el.className="bubble "+role;el.textContent=text;messages.appendChild(el);messages.scrollTop=messages.scrollHeight;return el}
 async function checkHealth(){try{const r=await fetch("/api/health");const d=await r.json();statusEl.textContent=d.model_configured?"Servidor listo · modelo configurado": "Servidor listo · falta conectar el modelo";}catch{statusEl.textContent="No se pudo contactar el servidor"}}
 form.addEventListener("submit",async e=>{e.preventDefault();const text=input.value.trim();if(!text)return;input.value="";addBubble(text,"user");const pending=addBubble("Estoy pensando…","assistant");send.disabled=true;
- try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...authHeaders()},body:JSON.stringify({message:text,conversation_id:conversationId})});const d=await r.json();if(!r.ok)throw new Error(d.detail||"Error del servidor");conversationId=d.conversation_id;pending.textContent=d.reply;}
+ try{const r=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json",...authHeaders()},body:JSON.stringify({message:text,conversation_id:conversationId})});const d=await r.json();if(!r.ok)throw new Error(d.detail||"Error del servidor");conversationId=d.conversation_id;localStorage.setItem("lexi_cloud_conversation_id",conversationId);pending.textContent=d.reply;}
  catch(err){pending.textContent="No pude completar la respuesta: "+err.message;}
  finally{send.disabled=false;input.focus();}});
 document.querySelector("#settings").onclick=()=>{document.querySelector("#token").value=localStorage.getItem(tokenKey)||"";dialog.showModal()};
 document.querySelector("#close-settings").onclick=()=>dialog.close();
 document.querySelector("#save-settings").onclick=()=>{localStorage.setItem(tokenKey,document.querySelector("#token").value.trim());dialog.close();checkHealth()};
+async function restoreConversation(){if(!conversationId)return;try{const r=await fetch("/api/conversations/"+encodeURIComponent(conversationId)+"/messages",{headers:authHeaders()});if(!r.ok)return;const d=await r.json();if(d.messages&&d.messages.length){messages.innerHTML="";for(const item of d.messages)addBubble(item.content,item.role==="user"?"user":"assistant");}}catch{}}
 checkHealth();
+restoreConversation();
 </script>
 </body>
 </html>
