@@ -1,0 +1,19 @@
+services:
+  lexi-cloud:
+    build: .
+    container_name: lexi-cloud
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      APP_NAME: "Lexi Cloud"
+      APP_TOKEN: ${APP_TOKEN}
+      LLM_BASE_URL: ${LLM_BASE_URL}
+      LLM_API_KEY: ${LLM_API_KEY}
+      LLM_MODEL: ${LLM_MODEL}
+      DATABASE_PATH: /data/lexi.db
+      MAX_HISTORY_MESSAGES: 20
+    volumes:
+      - lexi_data:/data
+volumes:
+  lexi_data:
