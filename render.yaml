@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: lexi-cloud
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_NAME
+        value: Lexi Cloud
+      - key: APP_TOKEN
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      - key: MAX_HISTORY_MESSAGES
+        value: "20"
