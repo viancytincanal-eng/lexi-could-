@@ -1,5 +1,6 @@
 import secrets
 import uuid
+import httpx
 from pathlib import Path
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
@@ -57,16 +58,13 @@ async def chat(body: ChatRequest):
     history = get_messages(conversation_id, settings.max_history_messages)
     try:
         reply = await generate_reply(history)
-    except httpx_error_types() as exc:
+    except (httpx.HTTPError, KeyError, ValueError, IndexError) as exc:
         raise HTTPException(status_code=502, detail=f"Error al consultar el modelo: {exc}") from exc
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     add_message(conversation_id, "assistant", reply)
     return {"conversation_id": conversation_id, "reply": reply}
 
-def httpx_error_types():
-    import httpx
-    return (httpx.HTTPError, KeyError, ValueError, IndexError)
 
 @app.get("/")
 def home():
