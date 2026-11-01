@@ -19,11 +19,13 @@ def startup():
 
 @app.middleware("http")
 async def protect_api(request, call_next):
-    if request.url.path.startswith("/api/") and settings.api_token:
+    if request.url.path.startswith("/api/") and request.url.path != "/api/health":
+        from starlette.responses import JSONResponse
+        if not settings.api_token:
+            return JSONResponse(status_code=503, content={"detail": "El servidor aún no tiene APP_TOKEN configurado"})
         supplied = request.headers.get("authorization", "")
         expected = f"Bearer {settings.api_token}"
         if not secrets.compare_digest(supplied, expected):
-            from starlette.responses import JSONResponse
             return JSONResponse(status_code=401, content={"detail": "No autorizado"})
     return await call_next(request)
 
@@ -64,7 +66,7 @@ async def chat(body: ChatRequest):
 
 def httpx_error_types():
     import httpx
-    return (httpx.HTTPError, KeyError, ValueError)
+    return (httpx.HTTPError, KeyError, ValueError, IndexError)
 
 @app.get("/")
 def home():
