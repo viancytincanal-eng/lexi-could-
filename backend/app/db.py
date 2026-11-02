@@ -1,7 +1,10 @@
+from pathlib import Path
 from sqlalchemy import create_engine, text
 from .config import settings
 
 DATABASE_URL = settings.database_url or f"sqlite:///{settings.database_path}"
+if DATABASE_URL.startswith("sqlite:///"):
+    Path(settings.database_path).parent.mkdir(parents=True, exist_ok=True)
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
 elif DATABASE_URL.startswith("postgresql://"):
