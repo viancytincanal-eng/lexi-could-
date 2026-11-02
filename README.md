@@ -2,52 +2,25 @@
 
 Asistente conversacional independiente, alojada en la nube y accesible desde móvil.
 
-## Estado actual: prototipo 0.1
-
-- Interfaz web móvil.
+## Estado actual: prototipo 0.2
+- Interfaz web móvil con centro de motores.
 - API FastAPI.
-- Memoria persistente: SQLite local o PostgreSQL externo.
-- Adaptador para modelos con API compatible con OpenAI Chat Completions.
-- Configuración mediante variables de entorno.
-- Dockerfile y blueprint de despliegue para Render.
-- Sin claves reales ni secretos guardados en el repositorio.
+- Memoria persistente de conversaciones en SQLite o PostgreSQL.
+- Adaptador de proveedores compatibles con OpenAI Chat Completions.
+- Prueba de conexión desde la interfaz.
+- Proveedores iniciales: Gemini (compatibilidad OpenAI), Groq, OpenRouter y OpenAI.
+- Las claves API de proveedores no se guardan en GitHub ni en la base de datos; se mantienen en la sesión del navegador y se envían al backend por HTTPS.
 
-## Despliegue sin tarjeta (propuesta inicial)
+## Importante
+El centro de motores es una primera versión. Todavía no descubre automáticamente modelos ni conmuta por sí solo entre proveedores. La disponibilidad gratuita y las cuotas dependen de cada proveedor y deben comprobarse antes de elegir un modelo.
 
-1. Crear una base PostgreSQL gratuita en Neon.
-2. Crear una cuenta gratuita en Render y conectar este repositorio.
-3. Render detecta `render.yaml` y prepara el servicio Docker.
-4. En Render, introducir la URL privada de Neon en `DATABASE_URL`.
-5. Configurar el proveedor/modelo en `LLM_BASE_URL`, `LLM_MODEL` y `LLM_API_KEY`.
-6. Desplegar y abrir la URL HTTPS de Render.
+Gemini debe configurarse con su endpoint compatible con OpenAI; la ruta `/v1beta/interactions` no es compatible con el adaptador actual.
 
-El servicio gratuito de Render se duerme tras inactividad y su disco local es efímero. Por eso la memoria se guarda en Neon, no en el contenedor. La base gratuita de Neon tiene límites de almacenamiento y cómputo; revisar `DEPLOYMENT.md`.
-
-## Inicio local
-
-Configura `.env` con un `APP_TOKEN` largo y, si quieres conversar, los datos del modelo. Ejecuta:
-
-```bash
-docker compose up --build
-```
-
-## Seguridad
-
-- El navegador nunca recibe la clave del proveedor del modelo.
-- La API requiere `APP_TOKEN`; el endpoint de salud es público para los chequeos del hosting.
-- Nunca subas `.env` ni claves reales a GitHub.
-- Antes de uso público, añade cuentas individuales, copias de seguridad y controles de abuso.
+## Despliegue
+El proyecto conserva el despliegue actual y la base de datos configurada. No publiques claves API, tokens ni cadenas de conexión en GitHub. Consulta `DEPLOYMENT.md` para los detalles del entorno.
 
 ## Estructura
-
 - `frontend/`: interfaz móvil.
-- `backend/app/`: API, memoria y adaptador del modelo.
-- `render.yaml`: configuración inicial de despliegue.
-- `ARCHITECTURE.md`: decisiones técnicas.
-- `DEPLOYMENT.md`: pasos y límites del alojamiento.
-
-## Principios
-
-- Evitar depender de un único proveedor.
-- Mantener el código y los datos bajo nuestro control.
-- Separar personalidad, memoria y conocimiento documental.
+- `backend/app/`: API, memoria y adaptadores.
+- `ARCHITECTURE.md`: diseño, seguridad y fases pendientes.
+- `DEPLOYMENT.md`: notas de despliegue.
