@@ -1,31 +1,33 @@
-# Arquitectura de Lexi Cloud 0.1
+# Arquitectura de Lexi Cloud 0.2
 
 ## Flujo
-Navegador móvil -> FastAPI propio -> memoria SQLite + adaptador LLM OpenAI-compatible.
+Navegador móvil -> FastAPI propio -> PostgreSQL/SQLite para conversaciones -> adaptador de proveedor compatible con OpenAI Chat Completions.
 
 ## Componentes
-- `frontend/index.html`: interfaz web adaptable.
-- `backend/app/main.py`: API, autenticación opcional por token y rutas.
+- `frontend/index.html`: interfaz móvil y centro de motores.
+- `backend/app/main.py`: API, autenticación y prueba de conexiones.
 - `backend/app/db.py`: conversaciones y mensajes persistentes.
-- `backend/app/llm.py`: adaptador desacoplado del proveedor.
-- `backend/app/config.py`: configuración por variables de entorno.
+- `backend/app/llm.py`: adaptador desacoplado y validación HTTPS de proveedores.
+- `backend/app/config.py`: configuración del servidor.
 
-## Decisiones
-- El navegador nunca recibe la clave del proveedor del modelo.
-- La memoria local del servidor no depende del proveedor LLM.
-- El endpoint del modelo se puede cambiar mediante variables de entorno.
-- SQLite sirve para el prototipo de una instancia; PostgreSQL será mejor al escalar.
-- Imágenes, voz y vídeo se añadirán como adaptadores independientes.
+## Centro de motores (fase inicial)
+- El usuario puede elegir Gemini, Groq, OpenRouter o un endpoint compatible admitido.
+- La interfaz permite probar el proveedor antes de conversar.
+- La URL y el modelo se guardan en el navegador; la clave API permanece en sessionStorage y se envía al backend solo al probar o conversar.
+- Las claves de proveedores no se guardan en la base de datos ni en GitHub.
+- El servidor admite inicialmente los hosts oficiales de Google Gemini, Groq, OpenRouter y OpenAI.
+- Se usa HTTPS y se rechazan hosts no incluidos en la lista de confianza para reducir riesgos de SSRF.
 
-## Límites actuales
-- No hay registro de usuarios ni multiusuario.
-- La autenticación es un único token compartido, adecuado sólo para pruebas privadas.
-- No hay streaming, recuperación documental (RAG), borrado/exportación de datos ni límites de uso.
-- El modelo debe ofrecer una API compatible con `/chat/completions`.
-- El despliegue público requiere HTTPS, token fuerte, copias de seguridad y revisión de seguridad.
+## Límites conocidos
+- El formato de conversación debe ser compatible con OpenAI Chat Completions. El endpoint Gemini `/v1beta/interactions` no es compatible con este adaptador; se utiliza el endpoint de compatibilidad OpenAI de Gemini.
+- No existe todavía descubrimiento automático de proveedores, catálogo verificado de cuotas gratuitas ni cambio automático entre proveedores.
+- La clave API se conserva solo durante la sesión de la pestaña; si se cierra, habrá que introducirla de nuevo.
+- No hay todavía generación de imágenes/vídeos, voz, multiusuario, RAG, streaming ni exportación/borrado de conversaciones.
+- La autenticación sigue usando un único APP_TOKEN compartido y es apropiada solo para pruebas privadas.
 
-## Siguiente fase
-1. Elegir hosting y proveedor de inferencia.
-2. Desplegar en entorno privado con HTTPS.
-3. Verificar persistencia y seguridad.
-4. Añadir cuentas individuales, gestión de memoria y PostgreSQL.
+## Próximas fases
+1. Verificar el despliegue 0.2 y conectar el primer proveedor.
+2. Añadir catálogo de modelos con disponibilidad y límites comprobados.
+3. Añadir perfiles de proveedores múltiples y fallback con límites seguros.
+4. Incorporar adaptadores independientes de imagen, vídeo y voz.
+5. Mejorar autenticación, gestión de secretos, copias de seguridad y privacidad antes de uso público.
