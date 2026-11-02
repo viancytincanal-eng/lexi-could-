@@ -15,9 +15,41 @@ app = FastAPI(title=settings.app_name, version="0.2.0")
 FRONTEND_DIR = Path(__file__).resolve().parents[2] / "frontend"
 
 
+# El fallo temporal de PostgreSQL no debe impedir que FastAPI arranque.
+# Así /api/health y la interfaz siguen disponibles para diagnosticar el servicio.
+database_ready = False
+database_error = None
+
+
 @app.on_event("startup")
 def startup():
-    init_db()
+    global database_ready, database_error
+    try:
+        init_db()
+        database_ready = True
+        database_error = None
+    except Exception as exc:
+        database_ready = False
+        database_error = type(exc).__name__
+        import logging
+        logging.exception("No se pudo inicializar la base de datos durante el arranque")
+
+
+def ensure_database():
+    global database_ready, database_error
+    if database_ready:
+        return
+    try:
+        init_db()
+        database_ready = True
+        database_error = None
+    except Exception as exc:
+        database_ready = False
+        database_error = type(exc).__name__
+        raise HTTPException(
+            status_code=503,
+            detail="La base de datos todavía no está disponible. El servidor sigue activo; revisa la conexión de Neon."
+        ) from exc
 
 
 @app.middleware("http")
@@ -52,6 +84,8 @@ def health():
         "model_configured": False,
         "provider_mode": "client_supplied",
         "auth_configured": bool(settings.api_token),
+        "database_ready": database_ready,
+        "database_error": database_error,
     }
 
 
@@ -81,16 +115,19 @@ async def test_provider(provider: ProviderConfig):
 
 @app.get("/api/conversations")
 def conversations():
+    ensure_database()
     return {"conversations": list_conversations()}
 
 
 @app.get("/api/conversations/{conversation_id}/messages")
 def conversation_messages(conversation_id: str):
+    ensure_database()
     return {"conversation_id": conversation_id, "messages": get_messages(conversation_id, 500)}
 
 
 @app.post("/api/chat")
 async def chat(body: ChatRequest):
+    ensure_database()
     conversation_id = body.conversation_id or str(uuid.uuid4())
     ensure_conversation(conversation_id)
     add_message(conversation_id, "user", body.message.strip())
